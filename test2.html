@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kali Uchis - Discography Ranking</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-image: url('https://www.transparenttextures.com/patterns/flowers.png'); background-color: #fff0f5; overflow-x: hidden; position: relative; }
+        h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.2), 0 8px 10px -6px rgba(236, 72, 153, 0.2); }
+        .opinion-box::-webkit-scrollbar { width: 8px; }
+        .opinion-box::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        .opinion-box::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.4); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+        
+        #album-modal { transition: opacity 0.3s ease; }
+        #modal-content { transition: all 0.5s ease-in-out; }
+
+        .album-card { perspective: 1000px; }
+        .album-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+        .album-card.is-flipped .album-card-inner { transform: rotateY(180deg); }
+        .album-card-front, .album-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 1rem; }
+        .album-card-back { transform: rotateY(180deg); }
+
+        .bg-gold { background-image: linear-gradient(to right bottom, #fde047, #f59e0b); }
+        .bg-lightblue { background-image: linear-gradient(to right bottom, #7dd3fc, #22d3ee); }
+        .bg-bronze { background-image: linear-gradient(to right bottom, #f97316, #c2410c); }
+
+        .theme-drunken-babble { background-image: radial-gradient(circle, #e4fde1, #bbf7d0); }
+        .theme-por-vida { background-image: radial-gradient(circle, #e0f7fa, #a5f3fc); }
+        .theme-isolation { background-image: radial-gradient(circle, #4338ca, #312e81); }
+        .theme-to-feel-alive { background-image: radial-gradient(circle, #64748b, #334155); }
+        .theme-sin-miedo { background-image: radial-gradient(circle, #fff0f5, #fbcfe8); }
+        .theme-red-moon-in-venus { background-image: radial-gradient(circle, #ffddd2, #fb923c); }
+        .theme-orquideas { background-image: radial-gradient(circle, #d8b4fe, #581c87); }
+        .theme-sincerely { background-image: radial-gradient(circle, #d2c8be, #a16207); }
+        
+        .avatar { object-fit: cover; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
+        
+        .decorative-flower-vine { position: absolute; z-index: 0; pointer-events: none; opacity: 0; animation: fade-in-out 10s linear infinite; }
+        .decorative-flower-vine path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: grow-vine 7s ease-out forwards; }
+        @keyframes grow-vine { to { stroke-dashoffset: 0; } }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; } 10%, 80% { opacity: 0.15; } }
+
+        .reveal-flower-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; }
+        .reveal-flower-container.is-growing { animation: fadeInFlower 3s ease-out forwards; }
+        @keyframes fadeInFlower { from { opacity: 0; } to { opacity: 1; } }
+
+        .flash-white { animation: flash 0.4s ease-out forwards; }
+        @keyframes flash { 50% { background-color: #fff; transform: scale(1.1); } 100% { background-color: transparent; transform: scale(1); } }
+
+        .album-card.is-revealing .album-card-front h3, .album-card.is-revealing .album-card-front p { animation: fadeOutText 0.5s ease-out forwards; }
+        @keyframes fadeOutText { to { opacity: 0; } }
+
+        #rank-overlay, #general-rating-overlay { position: absolute; transition: opacity 0.4s ease-in-out; }
+        #modal-left-pane.review-active #rank-overlay,
+        #modal-left-pane.review-active #general-rating-overlay { opacity: 0; }
+        
+        #rank-overlay {
+            bottom: 0.5rem; left: 50%; transform: translateX(-50%);
+            padding: 0.25rem 1.5rem;
+            border-radius: 0.5rem;
+        }
+        #general-rating-overlay { top: 0.5rem; right: 0.5rem; }
+        #general-rating-overlay svg { animation: spin 4s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .review-expansion-area {
+            grid-column: 1 / -1; /* Span all columns */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.7s ease-in-out;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .review-expansion-area.is-expanded {
+            max-height: 500px; /* Large enough value */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        
+        #avatar-overlay { opacity: 0; transform: scale(0.5); transition: opacity 0.4s ease, transform 0.4s ease; pointer-events: none; }
+        #avatar-overlay.is-active { opacity: 1; transform: scale(1); }
+        .emoji-bubble { position: relative; background: white; border-radius: 50%; padding: 1rem; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; animation: rocking-animation 4s ease-in-out infinite; color: #333; }
+        .emoji-bubble::after { content: ''; position: absolute; bottom: -10px; left: 20px; width: 0; height: 0; border: 20px solid transparent; border-top-color: white; border-bottom: 0; border-left: 0; transform: rotate(20deg); }
+        @keyframes rocking-animation { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(8deg); } 75% { transform: rotate(-8deg); } }
+        
+        .participant-card {
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+        }
+        .participant-grid.review-active .participant-card:not(.is-selected) {
+            transform: scale(0.65);
+            opacity: 0.7;
+        }
+
+    </style>
+</head>
+<body class="bg-rose-50 text-gray-800">
+
+    <div id="background-decor"></div>
+
+    <div class="container mx-auto p-4 md:p-8 relative z-10">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl md:text-7xl font-bold text-pink-600 mb-2">Kali Uchis</h1>
+            <p class="text-xl md:text-2xl text-pink-400">The Final Ranking</p>
+        </header>
+
+        <main id="ranking-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></main>
+        
+        <footer class="text-center mt-12 text-pink-400"><p>Created with love by Eryk, Weronika, Juliana, Dominika, Kamila, and Wiktor.</p></footer>
+    </div>
+    
+    <div id="album-modal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0">
+        <div id="modal-content" class="rounded-2xl w-full max-w-screen-xl max-h-[90vh] flex flex-col p-6 card-shadow relative transform scale-95">
+             <button id="close-modal" class="absolute top-6 right-6 z-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div class="flex flex-col md:flex-row gap-6 w-full h-full">
+                <div id="modal-left-pane" class="w-full md:w-2/5 flex-shrink-0">
+                     <div class="w-full h-full relative flex items-center justify-center">
+                        <img id="modal-cover-img" src="" class="w-full rounded-xl object-cover aspect-square shadow-lg">
+                        <div id="avatar-overlay" class="absolute inset-0 flex flex-col justify-center items-center text-center p-4"></div>
+                        <div id="rank-overlay" class="font-bold text-2xl"></div>
+                        <div id="general-rating-overlay" class="flex items-center justify-center w-16 h-16 text-white font-bold"></div>
+                    </div>
+                </div>
+                <div id="modal-right-pane" class="w-full md:w-3/5 flex flex-col justify-center relative overflow-y-auto pr-2">
+                    <div id="general-results-view" class="w-full h-full flex items-center"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <audio id="audio-player" style="display: none;"></audio>
+    <audio id="album-audio-player" style="display: none;"></audio>
+
+    <script>
+        // --- DATA SECTION ---
+        const participants = { "Eryk": { avatarUrl: "Eryk.png" }, "Weronika": { avatarUrl: "Werka.png" }, "Juliana": { avatarUrl: "Julka.png" }, "Dominika": { avatarUrl: "domcia2.png" }, "Kamila": { avatarUrl: "Kama.png" }, "Wiktor": { avatarUrl: "Wiciu.png" } };
+        
+        const csvData = `
+S17_C3.jpg,S17_DB_Porque_tE_Vas.mp3,1,8.5,Isolation,3,1,1,1,2,2,"A timeless masterpiece.","After The Storm","_LoseMyCool.mp3","👑",10,"An incredible debut.","Miami","_Territorial.mp3","💖",9,"This album is a masterpiece, a sonic journey that feels both classic and futuristic. It's a no-skip album for me, with incredible production and raw, honest lyrics.","In My Dreams","InMyDreams.mp3","😍",10,"The aesthetic is perfect.","Your Teeth In My Neck","YourTeethInMyNeck.mp3","🌴",9,"Flawless artistry.","Dead To Me","DeadToMe.mp3","✨",10,"Iconic collaboration.","Just A Stranger","JustAStranger.mp3","😎",9
+S17_C5.jpg,telepatia.mp3,2,9.2,Sin Miedo,2,2,3,2,1,1,"A beautiful, bold project in Spanish.","telepatía","telepatia.mp3","🦋",9,"My favorite album from her. The all-Spanish record I was waiting for.","fue mejor","fuemejor.mp3","🔥",10,"A stunning exploration of her roots. The blend of styles is incredible and feels so authentic.","la luz(Fin)","laluz.mp3","💃",8,"Immaculate energy.","te pongo mal(prendelo)","tepongomal.mp3","❤️",9,"Ethereal and personal.","vaya con dios","vayacondios.mp3","🕊️",9,"Peak Kali. A 10/10.","aquí yo mando","aquiyomando.mp3","💯",10
+S17_C6.jpg,IWishyouRoses.mp3,3,8.3,Red Moon In Venus,1,3,2,4,3,3,"Mature and cohesive. A beautiful R&B album.","I Wish you Roses","IWishyouRoses.mp3","🌹",8,"Very comforting and lush. Perfect for a chill evening.","Endlessly","Endlessly.mp3","🧘‍♀️",8,"A deeply romantic and sensual album. It feels like a warm hug. The production is so smooth.","Moonlight","Moonlight.mp3","🌙",9,"My number one. This album is pure magic from start to finish.","Worth the Wait","WorththeWait.mp3","💫",10,"Introspective and sweet. A lovely listen.","Love Between...","LoveBetween.mp3","💌",8,"Dreamy production. Great for late-night drives.","Fantasy","Fantasy.mp3","몽",8
+S17_C7.jpg,IgualQueUnAngel.mp3,4,8.0,Orquídeas,4,4,4,3,4,4,"Great features and a return to a more upbeat sound.","Igual Que Un Ángel","IgualQueUnAngel.mp3","🌸",8,"Fun and energetic. A great evolution of her sound.","Muñekita","Munekita.mp3","🎉",8,"A vibrant and colorful album. I love the mix of Spanish and English tracks. It's full of life.","Te Mata","TeMata.mp3","🌺",8,"The Karol G collab is everything.","Labios Mordidos","LabiosMordidos.mp3","🎶",8,"Kali continues to innovate.","Young Rich & In Love","YoungRichInLove.mp3","🦋",8,"Fresh and classic Kali.","No Hay Ley Parte 2","NoHayLey.mp3","💪",8
+S17_C2.jpg,Melting.mp3,5,7.2,Por Vida,5,5,5,5,5,5,"Raw talent on full display. You can hear the beginnings of her genius.","Know What I Want","KnowWhatIWant.mp3","🌱",8,"Iconic tracks that set the stage for her career.","Loner","Loner.mp3","✨",7,"A beautiful and dreamy project. It's amazing to see how far she's come since this.","Sycamore Tree","SycamoreTree.mp3","💜",7,"Very dreamy and lo-fi. A vibe.","Melting","Melting.mp3","💭",7,"A real gem. So many good songs on here.","Rush","Rush.mp3","📼",7,"Chill and vibey.","Call Me","CallMe.mp3","😌",7
+S17_C4.jpg,tofeelalive.mp3,6,6.5,To Feel Alive EP,6,6,6,6,6,6,"Short but impactful. A perfect quarantine project.","i want war (BUT I NEED PEACE)","iwantwar.mp3","❤️‍🩹",7,"Captures the feeling of that time perfectly.","to feel alive","tofeelalive.mp3","🏠",7,"A raw and emotional snapshot of a difficult time. It's incredibly vulnerable and powerful.","angel","angel.mp3","😢",6,"A time capsule of 2020.","i want war (BUT I NEED PEACE)","iwantwar.mp3","🔒",6,"Raw and honest. You can feel her emotions.","to feel alive","tofeelalive.mp3","✍️",7,"Interesting project with a unique sound.","angel","angel.mp3","👀",6
+S17_C1.jpg,_Breeze.mp3,7,6.0,Drunken Babble,8,7,7,7,8,7,"Fascinating to hear her start. So much potential.","T.Y.W.I.G.","TYWIG.mp3","👶",6,"A historical document of an artist finding her voice.","Lean On You","LeanOnYou.mp3","🤷‍♀️",5,"It's rough around the edges, but the raw talent is undeniable. A must-listen for true fans.","Never Be The Same","NeverBeTheSame.mp3","🕰️",6,"Respect for the hustle. She's come so far.","What a Life","WhataLife.mp3","😅",5,"A diamond in the rough.","Table For Two","TableForTwo.mp3","💎",6,"Interesting early influences.","Sunset","Sunset.mp3","🧐",6
+S17_C8.jpg,_Territorial.mp3,8,5.3,Sincerely,7,8,8,8,7,8,"Placeholder album for demo purposes.","N/A","placeholder.mp3","❓",5,"Placeholder album for demo purposes.","N/A","placeholder.mp3","❓",6,"Placeholder album for demo purposes.","N/A","placeholder.mp3","❓",5,"Placeholder album for demo purposes.","N/A","placeholder.mp3","❓",6,"Placeholder album for demo purposes.","N/A","placeholder.mp3","❓",5,"Placeholder album for demo purposes.","N/A","placeholder.mp3","❓",5
+`;
+        
+        let albumsData = [];
+
+        // --- CORE APPLICATION LOGIC (No need to edit below this line) ---
+
+        const albumThemes = { "Drunken Babble": "theme-drunken-babble", "Por Vida": "theme-por-vida", "Isolation": "theme-isolation", "To Feel Alive EP": "theme-to-feel-alive", "Sin Miedo": "theme-sin-miedo", "Red Moon In Venus": "theme-red-moon-in-venus", "Orquídeas": "theme-orquideas", "Sincerely": "theme-sincerely" };
+        const textColors = { "theme-isolation": "text-white", "theme-to-feel-alive": "text-white", "theme-orquideas": "text-white", "theme-sincerely": "text-white" };
+        
+        let currentAlbum = null, currentExpandedCard = null;
+        let audioFadeIntervals = {};
+        const audioPlayer = document.getElementById('audio-player');
+        const albumAudioPlayer = document.getElementById('album-audio-player');
+
+        function parseCSVRow(row) {
+            const result = [];
+            let currentField = '';
+            let inQuotes = false;
+            for (let i = 0; i < row.length; i++) {
+                const char = row[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(currentField);
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            result.push(currentField);
+            return result;
+        }
+
+        function parseCSVData() {
+            const participantNames = Object.keys(participants);
+            const rows = csvData.trim().split('\n').filter(row => row.trim() !== '');
+            const header = "cover,albumsong,place,avgrating,album,DominikaPlace,ErykPlace,JulianaPlace,KamilaPlace,WeronikaPlace,WiktorPlace,DominikaOpinion,DominikaSong,DominikaSongFile,DominikaEmoji,DominikaRating,ErykOpinion,ErykSong,ErykSongFile,ErykEmoji,ErykRating,JulianaOpinion,JulianaSong,JulianaSongFile,JulianaEmoji,JulianaRating,KamilaOpinion,KamilaSong,KamilaSongFile,KamilaEmoji,KamilaRating,WeronikaOpinion,WeronikaSong,WeronikaSongFile,WeronikaEmoji,WeronikaRating,WiktorOpinion,WiktorSong,WiktorSongFile,WiktorEmoji,WiktorRating".split(',');
+            
+            albumsData = rows.map(row => {
+                const values = parseCSVRow(row);
+                const rowData = header.reduce((obj, key, i) => {
+                    obj[key] = values[i];
+                    return obj;
+                }, {});
+
+                const album = {
+                    title: rowData.album,
+                    coverUrl: `Covers/${rowData.cover}`,
+                    albumSoundUrl: `Audios/${rowData.albumsong}`,
+                    reviews: []
+                };
+
+                participantNames.forEach(name => {
+                    album.reviews.push({
+                        participant: name,
+                        place: parseInt(rowData[`${name}Place`]),
+                        rating: parseInt(rowData[`${name}Rating`]),
+                        emoji: rowData[`${name}Emoji`],
+                        dedicatedSong: rowData[`${name}Song`],
+                        opinion: rowData[`${name}Opinion`],
+                        songUrl: `Audios/${rowData[`${name}SongFile`]}`
+                    });
+                });
+
+                return album;
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => { 
+            parseCSVData();
+            addDecorativeFlowers(); 
+            renderRankedAlbums(); 
+            setupModalListeners(); 
+        });
+
+        function addDecorativeFlowers() {
+            const container = document.getElementById('background-decor');
+            const flowerSVG = `<svg class="decorative-flower-vine" width="200" height="400" viewBox="0 0 200 400" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 0 V 400" stroke="#fbcfe8" stroke-width="2"/><path d="M100 100 C 50 150, 150 150, 100 200" stroke="#fbcfe8" stroke-width="2"/><path d="M100 250 C 50 300, 150 300, 100 350" stroke="#fbcfe8" stroke-width="2"/><path d="M100 50 C 150 75, 50 75, 100 100" stroke="#fbcfe8" stroke-width="2" /></svg>`;
+            for (let i = 0; i < 5; i++) {
+                const flower = document.createElement('div');
+                flower.innerHTML = flowerSVG;
+                flower.style.position = 'absolute';
+                flower.style.top = `${Math.random() * 80}vh`;
+                flower.style.left = `${Math.random() * 90}vw`;
+                flower.style.transform = `rotate(${Math.random() * 360}deg) scale(${0.5 + Math.random() * 0.5})`;
+                flower.style.animationDelay = `${Math.random() * 10}s`;
+                container.appendChild(flower);
+            }
+        }
+
+        function calculateAndSortAlbums() { return albumsData.map((a,i) => ({...a, originalIndex: i, reviews: a.reviews || [], avgPlace: (a.reviews||[]).length ? (a.reviews.reduce((s,r)=>s+r.place,0)/a.reviews.length) : Infinity, avgRating: (a.reviews||[]).length?(a.reviews.reduce((s,r)=>s+r.rating,0)/a.reviews.length):0})).sort((a,b)=>b.avgPlace-a.avgPlace); }
+
+        function renderRankedAlbums() {
+            const container = document.getElementById('ranking-grid');
+            const sortedAlbums = calculateAndSortAlbums();
+            const getOrdinal = n => n + (["th","st","nd","rd"][(n%100-20)%10]||["th","st","nd","rd"][n%100]||"th");
+            const revealFlowerSVG = `<svg class="w-2/3 h-2/3" viewBox="-10 -10 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M50,100 C20,80 20,20 50,0 C80,20 80,80 50,100 Z M50,100 C20,80 80,80 50,100" stroke="white" stroke-width="2" stroke-linecap="round" /><path d="M50,0 C20,20 80,20 50,0" stroke="white" stroke-width="2" stroke-linecap="round" /><path d="M50,50 C35,35 35,65 50,50" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M50,50 C65,35 65,65 50,50" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+            container.innerHTML = sortedAlbums.map((album, index) => {
+                const rank = sortedAlbums.length - index;
+                const hasReviews = album.reviews.length > 0;
+                let c = hasReviews ? {'1':'bg-gold', '2':'bg-lightblue', '3':'bg-bronze'}[rank] || 'bg-gradient-to-br from-pink-400 to-fuchsia-500' : 'bg-gray-400';
+                const rankColor = rank === 1 ? 'bg-gold text-black' : rank === 2 ? 'bg-lightblue text-black' : rank === 3 ? 'bg-bronze text-white' : 'bg-pink-600 text-white';
+
+                return `<div class="album-card aspect-square ${hasReviews ? 'cursor-pointer' : 'cursor-not-allowed'}" ${hasReviews ? `data-album-title="${album.title}"` : ''}>
+                    <div class="album-card-inner card-shadow">
+                        <div class="album-card-front text-white ${c}">
+                            <div class="reveal-flower-container">${revealFlowerSVG}</div>
+                            <h3 class="text-4xl lg:text-5xl font-bold transition-opacity duration-500">${getOrdinal(rank)} Place</h3>
+                            <p class="mt-2 text-white/80 transition-opacity duration-500">${hasReviews ? 'Click to Reveal' : 'No Reviews'}</p>
+                        </div>
+                        <div class="album-card-back bg-white">
+                            <img src="${album.coverUrl}" class="w-full h-full object-cover rounded-xl"/>
+                            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 font-bold text-xl px-4 py-1 rounded-md ${rankColor}">#${rank}</div>
+                        </div>
+                    </div></div>`;
+            }).join('');
+            
+            document.querySelectorAll('.album-card[data-album-title]').forEach(card => {
+                card.addEventListener('click', () => {
+                     if (card.classList.contains('is-revealing') || card.classList.contains('is-flipped')) {
+                        openModal(card.dataset.albumTitle);
+                        return;
+                    }
+                    card.classList.add('is-revealing');
+                    const flowerContainer = card.querySelector('.reveal-flower-container');
+                    flowerContainer.classList.add('is-growing');
+                    card.querySelector('h3').style.opacity = '0'; card.querySelector('p').style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        const front = card.querySelector('.album-card-front');
+                        front.classList.add('flash-white');
+                        
+                        setTimeout(() => {
+                            card.classList.add('is-flipped');
+                            const albumTitle = card.dataset.albumTitle;
+                            const r = card.getBoundingClientRect(); 
+                            confetti({particleCount:150, spread:90, origin:{x:(r.left+r.width/2)/window.innerWidth, y:(r.top+r.height/2)/window.innerHeight}});
+                            setTimeout(() => openModal(albumTitle), 100);
+                            card.classList.remove('is-revealing');
+                        }, 400);
+
+                    }, 3000); 
+                });
+            });
+        }
+
+        function openModal(title) {
+            currentExpandedCard = null;
+            const sortedAlbums = calculateAndSortAlbums();
+            currentAlbum = sortedAlbums.find(a => a.title === title);
+            if (!currentAlbum) return;
+
+            const rank = sortedAlbums.length - sortedAlbums.findIndex(a => a.title === title);
+            
+            if (currentAlbum.albumSoundUrl && currentAlbum.albumSoundUrl !== 'Audios/placeholder.mp3') {
+                playAudio(albumAudioPlayer, currentAlbum.albumSoundUrl);
+            }
+
+            const modalContent = document.getElementById('modal-content');
+            const theme = albumThemes[currentAlbum.title] || '';
+            modalContent.className = modalContent.className.replace(/theme-\S+/g, '');
+            modalContent.classList.add(theme);
+            document.getElementById('modal-left-pane').classList.remove('review-active');
+
+            const participantTextColorClass = textColors[theme] || 'text-pink-700';
+            document.getElementById('close-modal').className = `absolute top-6 right-6 z-50 ${participantTextColorClass === 'text-white' ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-pink-600'} transition-colors`;
+            
+            document.getElementById('modal-cover-img').src = currentAlbum.coverUrl;
+            
+            const rankOverlay = document.getElementById('rank-overlay');
+            rankOverlay.className = 'font-bold text-2xl absolute'; 
+            if (participantTextColorClass === 'text-white') {
+                rankOverlay.classList.add('bg-white/90', 'text-black');
+            } else {
+                rankOverlay.classList.add('bg-pink-700', 'text-white');
+            }
+            rankOverlay.style.bottom = '0.5rem';
+            rankOverlay.style.left = '50%';
+            rankOverlay.style.transform = 'translateX(-50%)';
+            rankOverlay.style.padding = '0.25rem 1.5rem';
+            rankOverlay.style.borderRadius = '0.5rem';
+            rankOverlay.innerHTML = `<span>#${rank}</span>`;
+            
+            const ratingOverlay = document.getElementById('general-rating-overlay');
+            ratingOverlay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="absolute w-full h-full text-yellow-300 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg><span class="absolute text-black text-sm" style="text-shadow: 0 0 3px white;">${currentAlbum.avgRating.toFixed(1)}</span>`;
+            
+            displayGeneralResults();
+            const modal = document.getElementById('album-modal'); modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.add('opacity-100'); modalContent.classList.remove('scale-95'); }, 10);
+        }
+
+        function displayGeneralResults() {
+            const generalView = document.getElementById('general-results-view');
+            
+            generalView.innerHTML = `
+                <div class="participant-grid grid grid-cols-3 gap-2 justify-items-center w-full">
+                    ${(currentAlbum.reviews||[]).map(r => `
+                        <div class="participant-card text-center" data-participant="${r.participant}">
+                            <div class="relative w-44 h-44 lg:w-48 lg:h-48 cursor-pointer">
+                                 <img src="${participants[r.participant].avatarUrl}" class="avatar w-full h-full">
+                                 <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white font-bold text-xl px-3 rounded-full">${r.place}</div>
+                            </div>
+                        </div>`).join('')}
+                    <div class="review-expansion-area bg-black/20 text-white rounded-lg"></div>
+                </div>`;
+            
+            const expansionArea = generalView.querySelector('.review-expansion-area');
+            const avatarOverlay = document.getElementById('avatar-overlay');
+            const leftPane = document.getElementById('modal-left-pane');
+            const grid = generalView.querySelector('.participant-grid');
+
+            generalView.querySelectorAll('.participant-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const participantName = card.dataset.participant;
+                    const review = currentAlbum.reviews.find(r => r.participant === participantName);
+                    
+                    const isExpanded = expansionArea.classList.contains('is-expanded');
+                    const isSameCard = currentExpandedCard === card;
+
+                    const collapseCurrent = (callback) => {
+                        grid.classList.remove('review-active');
+                        if (currentExpandedCard) {
+                            currentExpandedCard.classList.remove('is-selected');
+                        }
+                        expansionArea.classList.remove('is-expanded');
+                        avatarOverlay.classList.remove('is-active');
+                        leftPane.classList.remove('review-active');
+                        currentExpandedCard = null;
+
+                        stopAudio(audioPlayer, () => {
+                            if (currentAlbum.albumSoundUrl && currentAlbum.albumSoundUrl !== 'Audios/placeholder.mp3') {
+                                playAudio(albumAudioPlayer, currentAlbum.albumSoundUrl);
+                            }
+                        });
+
+                        setTimeout(callback, 700);
+                    };
+
+                    const expandNew = () => {
+                        stopAudio(albumAudioPlayer);
+
+                        grid.classList.add('review-active');
+                        card.classList.add('is-selected');
+                        leftPane.classList.add('review-active');
+                        avatarOverlay.innerHTML = `<img src="${participants[review.participant].avatarUrl}" class="avatar w-full h-full object-contain rounded-xl"><div class="absolute top-2 right-8"><div class="emoji-bubble">${review.emoji}</div></div></div>`;
+                        expansionArea.innerHTML = `
+                            <div class="p-4 h-full flex flex-col">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-3/4 flex items-center gap-4">
+                                        <button class="play-pause-btn w-10 h-10 bg-white/30 rounded-full flex items-center justify-center text-white hover:bg-white/50 transition-colors flex-shrink-0"></button>
+                                        <div>
+                                            <div class="text-md font-semibold">Growing Song:</div>
+                                            <div class="text-xl font-bold">${review.dedicatedSong}</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-1/4 text-center">
+                                        <div class="text-lg font-semibold">Rating</div>
+                                        <div class="text-4xl font-bold">${review.rating}/10</div>
+                                    </div>
+                                </div>
+                                <div class="opinion-box text-lg flex-grow overflow-y-auto bg-black/10 p-4 rounded-xl">
+                                    ${review.opinion}
+                                </div>
+                            </div>`;
+
+                        expansionArea.classList.add('is-expanded');
+                        avatarOverlay.classList.add('is-active');
+                        currentExpandedCard = card;
+                        setupAudio(review.songUrl, expansionArea.querySelector('.play-pause-btn'));
+                    };
+
+                    if (isExpanded) {
+                        if (isSameCard) { 
+                            collapseCurrent(() => {});
+                        } else { 
+                            collapseCurrent(expandNew);
+                        }
+                    } else {
+                        expandNew();
+                    }
+                });
+            });
+        }
+        
+        function setupAudio(songUrl, btn) {
+            const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
+            const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
+            
+            const updateBtn = () => { if(btn) btn.innerHTML = audioPlayer.paused ? playIcon : pauseIcon; };
+            
+            if (songUrl && songUrl !== 'Audios/placeholder.mp3') {
+                playAudio(audioPlayer, songUrl, updateBtn);
+            }
+
+            if(btn) {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (audioPlayer.paused) {
+                        playAudio(audioPlayer, audioPlayer.src, updateBtn);
+                    } else {
+                        stopAudio(audioPlayer, updateBtn);
+                    }
+                };
+            }
+            audioPlayer.onplay = audioPlayer.onpause = updateBtn;
+            
+            audioPlayer.onended = () => {
+                stopAudio(audioPlayer, () => {
+                    audioPlayer.currentTime = 0;
+                    playAudio(audioPlayer, audioPlayer.src, updateBtn);
+                });
+            };
+            
+            updateBtn();
+        }
+
+        function playAudio(player, src, callback) {
+            const intervalId = player.id === 'audio-player' ? 'audioFadeInterval' : 'albumAudioFadeInterval';
+            clearInterval(audioFadeIntervals[intervalId]);
+            player.src = src;
+
+            const canPlayHandler = () => {
+                player.volume = 0;
+                player.play().catch(e => console.error("Audio Play Error:", e));
+                audioFadeIntervals[intervalId] = setInterval(() => {
+                    const newVolume = player.volume + 0.05;
+                    if (newVolume < 1) {
+                        player.volume = newVolume;
+                    } else {
+                        player.volume = 1;
+                        clearInterval(audioFadeIntervals[intervalId]);
+                        if (callback) callback();
+                    }
+                }, 50);
+            };
+            player.addEventListener('canplaythrough', canPlayHandler, { once: true });
+        }
+
+        function stopAudio(player, callback) {
+            const intervalId = player.id === 'audio-player' ? 'audioFadeInterval' : 'albumAudioFadeInterval';
+            clearInterval(audioFadeIntervals[intervalId]);
+
+            if (isNaN(player.duration) || player.paused) {
+                if (callback) callback();
+                return;
+            }
+
+            audioFadeIntervals[intervalId] = setInterval(() => {
+                const newVolume = player.volume - 0.05;
+                if (newVolume > 0) {
+                    player.volume = newVolume;
+                } else {
+                    player.volume = 0;
+                    player.pause();
+                    clearInterval(audioFadeIntervals[intervalId]);
+                    if (callback) callback();
+                }
+            }, 50);
+        }
+
+        function closeModal() {
+            stopAudio(audioPlayer);
+            stopAudio(albumAudioPlayer);
+            
+            const modal = document.getElementById('album-modal');
+            modal.classList.remove('opacity-100');
+            modal.querySelector('#modal-content').classList.add('scale-95');
+            
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                currentExpandedCard = null;
+                document.getElementById('avatar-overlay').classList.remove('is-active');
+            }, 300);
+        }
+
+        function setupModalListeners() {
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+        }
+    </script>
+</body>
+</html>
